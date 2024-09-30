@@ -1,0 +1,23 @@
+server:
+  port: 8080
+spring:
+  datasource:
+    username: root
+    password: Bkmzvfhbyf0905!
+    url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+    hibernate:
+      ddl-auto: update
+      show-sql: true
+indexing-settings:
+  sites:
+    - url: https://sendel.ru
+      name: Konstantin Shibkov
+    - url: https://nikoartgallery.com
+      name: Галерея искусст Niko
+jsoup:
+  user-agent: MephistoSearchBot
+  referrer: http://www.google.com
