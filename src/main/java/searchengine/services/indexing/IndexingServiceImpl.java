@@ -2,16 +2,10 @@ package searchengine.services.indexing;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import org.springframework.boot.autoconfigure.web.ServerProperties;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import searchengine.config.SitesList;
 import searchengine.dto.indexing.IndexingResponse;
-import searchengine.exceptions.NotFoundException;
 import searchengine.model.*;
 import searchengine.repositoreis.IndexRepository;
 import searchengine.repositoreis.LemmaRepository;
@@ -20,7 +14,6 @@ import searchengine.repositoreis.SiteRepository;
 import searchengine.services.lemma.LemmaService;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -29,9 +22,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import static java.lang.Thread.sleep;
 
@@ -51,43 +42,49 @@ public class IndexingServiceImpl implements IndexingService {
     @Override
     public IndexingResponse startIndexing() {
         IndexingResponse indexingResponse = new IndexingResponse();
-        if (existsIndexingSite()) {
-            indexingResponse.setResult(false);
-            indexingResponse.setMessage("Индексация уже запущена");
-            return indexingResponse;
-        }
-        deleteSites();
-        log.info("Start indexing");
-        pool = new ForkJoinPool();
-        for (searchengine.config.Site site : sitesList.getSites()) {
-            String url = site.getUrl();
-            log.info("Save site with url: {}", url);
-            Site site1 = new Site();
-            site1.setName(site.getName());
-            site1.setUrl(url.toLowerCase());
-            site1.setStatus(SiteStatus.INDEXING);
-            site1.setStatusTime(LocalDateTime.now());
-            siteRepository.save(site1);
-        }
+        new Thread(() -> {
+            indexingResponse.setResult(true);
+        }).start();
 
-        for (Site site : siteRepository.findAll()) {
-            if (isFailed(site.getId())) {
-                continue;
-            }
-            log.info("Start indexing site: {}", site.getUrl());
-            pool.invoke(new HtmlParser(site.getUrl(), site, pageRepository, siteRepository, lemmaService));
-            if (isFailed(site.getId())) {
+        new  Thread(() -> {
+            if (existsIndexingSite()) {
                 indexingResponse.setResult(false);
-                indexingResponse.setMessage(site.getLastError());
-            } else {
-                site.setStatus(SiteStatus.INDEXED);
-                site.setStatusTime(LocalDateTime.now());
-                siteRepository.save(site);
-                indexingResponse.setResult(true);
-                indexingResponse.setMessage("Indexing site " + site.getUrl() + " completed successfully");
-            }
+                indexingResponse.setError("Индексация уже запущена");
+             }else{
+                deleteSites();
+                log.info("Start indexing");
+                pool = new ForkJoinPool();
+                for (searchengine.config.Site site : sitesList.getSites()) {
+                    String url = site.getUrl();
+                    log.info("Save site with url: {}", url);
+                    Site site1 = new Site();
+                    site1.setName(site.getName());
+                    site1.setUrl(url.toLowerCase());
+                    site1.setStatus(SiteStatus.INDEXING);
+                    site1.setStatusTime(LocalDateTime.now());
+                    siteRepository.save(site1);
+                }
 
-        }
+                for (Site site : siteRepository.findAll()) {
+                    if (isFailed(site.getId())) {
+                        continue;
+                    }
+                    log.info("Start indexing site: {}", site.getUrl());
+                    pool.invoke(new HtmlParser(site.getUrl(), site, pageRepository, siteRepository, lemmaService));
+                    if (isFailed(site.getId())) {
+                        indexingResponse.setResult(false);
+                        indexingResponse.setError(site.getLastError());
+                    } else {
+                        site.setStatus(SiteStatus.INDEXED);
+                        site.setStatusTime(LocalDateTime.now());
+                        siteRepository.save(site);
+                        indexingResponse.setResult(true);
+                        indexingResponse.setError("Indexing site " + site.getUrl() + " completed successfully");
+                    }
+
+                }
+            }
+        }).start();
         return indexingResponse;
     }
 
@@ -103,7 +100,7 @@ public class IndexingServiceImpl implements IndexingService {
         log.info("Индексация прервана пользователем");
         IndexingResponse indexingResponse = new IndexingResponse();
         indexingResponse.setResult(false);
-        indexingResponse.setMessage("Indexing stopped by user");
+        indexingResponse.setError("Indexing stopped by user");
         return indexingResponse;
     }
 
@@ -138,18 +135,18 @@ public class IndexingServiceImpl implements IndexingService {
             } else {
                 log.warn("Site not found: " + siteUrl);
                 indexingResponse.setResult(false);
-                indexingResponse.setMessage("Данная страница находится за пределами сайтов,\n" +
+                indexingResponse.setError("Данная страница находится за пределами сайтов,\n" +
                         "указанных в конфигурационном файле");
                 return indexingResponse;
             }
 
         } catch (IOException | InterruptedException | CancellationException e) {
             indexingResponse.setResult(false);
-            indexingResponse.setMessage("Ошибка индексации");
+            indexingResponse.setError("Ошибка индексации");
             return indexingResponse;
         }
         indexingResponse.setResult(true);
-        indexingResponse.setMessage("Indexing completed successfully");
+        indexingResponse.setError("Indexing completed successfully");
         return indexingResponse;
     }
 
