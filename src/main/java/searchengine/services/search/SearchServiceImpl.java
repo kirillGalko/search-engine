@@ -12,6 +12,7 @@ import searchengine.repositoreis.IndexRepository;
 import searchengine.repositoreis.LemmaRepository;
 import searchengine.repositoreis.SiteRepository;
 import searchengine.services.indexing.HtmlParser;
+import searchengine.services.lemma.EnglishLemmaParser;
 import searchengine.services.lemma.LemmaParser;
 
 import java.util.*;
@@ -28,6 +29,7 @@ public class SearchServiceImpl implements SearchService {
     private final LemmaRepository lemmaRepository;
     private final SnippetGenerator snippetGenerator;
     private final LemmaParser lemmaParser;
+    private final EnglishLemmaParser englishLemmaParser;
 
     @Override
     public SearchResponse search(String query, String site, Integer offset, Integer limit) {
@@ -38,6 +40,8 @@ public class SearchServiceImpl implements SearchService {
         }
         List<Site> sites = getSites(site);
         Set<String> queryLemmas = lemmaParser.getLemmaSet(query.trim());
+        Set<String> englishQueryLemmas = englishLemmaParser.getLemmaSet(query.trim());
+        queryLemmas.addAll(englishQueryLemmas);
 
         Map<Page, Double> pageRank = new HashMap<>();
 

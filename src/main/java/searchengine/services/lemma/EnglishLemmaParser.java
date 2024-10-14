@@ -1,27 +1,23 @@
 package searchengine.services.lemma;
 
 import org.apache.lucene.morphology.LuceneMorphology;
-import org.apache.lucene.morphology.russian.RussianAnalyzer;
-import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
+import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 @Component
-public class LemmaParser {
-    private RussianLuceneMorphology luceneMorphology;
-    private static final String WORD_TYPE_REGEX = "\\W\\w&&[^а-яА-Я\\s]";
-    private static final String[] particlesNames = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ", "МС"};
+public class EnglishLemmaParser {
+    private EnglishLuceneMorphology luceneMorphology;
+    private static final String WORD_TYPE_REGEX = "\\W\\w&&[^A-Za-z\\s]";
+    private static final String[] particlesNames = new String[]{"ARTICLE", "VBE", "PREP", "CONJ", "PN"};
 
-    public LemmaParser(RussianLuceneMorphology luceneMorphology) throws IOException {
+    public EnglishLemmaParser(EnglishLuceneMorphology luceneMorphology) throws IOException {
         this.luceneMorphology = luceneMorphology;
     }
 
     public Map<String, Integer> collectLemmas(String text) {
-        String[] words = arrayContainsRussianWords(text);
+        String[] words = arrayContainsEnglishWords(text);
         HashMap<String, Integer> lemmas = new HashMap<>();
 
         for (String word : words) {
@@ -52,7 +48,7 @@ public class LemmaParser {
     }
 
     public Set<String> getLemmaSet(String text) {
-        String[] textArray = arrayContainsRussianWords(text);
+        String[] textArray = arrayContainsEnglishWords(text);
         Set<String> lemmaSet = new HashSet<>();
         for (String word : textArray) {
             if (!word.isEmpty() && isCorrectWordForm(word)) {
@@ -79,9 +75,9 @@ public class LemmaParser {
         return false;
     }
 
-    public String[] arrayContainsRussianWords(String text) {
+    public String[] arrayContainsEnglishWords(String text) {
         return text.toLowerCase(Locale.ROOT)
-                .replaceAll("([^а-яё\\s])", " ")
+                .replaceAll("([^a-z\\s])", " ")
                 .trim()
                 .split("\\s+");
     }

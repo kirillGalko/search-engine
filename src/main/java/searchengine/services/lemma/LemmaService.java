@@ -24,10 +24,13 @@ public class LemmaService {
     private final LemmaRepository lemmaRepository;
     private final SiteRepository siteRepository;
     private final LemmaParser lemmaParser;
+    private final EnglishLemmaParser englishLemmaParser;
 
     public void findAndSave(Page page) {
         String text = htmlToText(page.getContent());
         Map<String, Integer> lemmas = lemmaParser.collectLemmas(text);
+        Map<String, Integer> englishLemmas = englishLemmaParser.collectLemmas(text);
+        lemmas.putAll(englishLemmas);
         Set<Lemma> lemmaSetToSave = new HashSet<>();
         Set<Index> indices = new HashSet<>();
         synchronized (lemmaRepository) {
