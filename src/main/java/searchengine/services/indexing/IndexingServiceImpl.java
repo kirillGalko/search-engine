@@ -79,7 +79,6 @@ public class IndexingServiceImpl implements IndexingService {
                         site.setStatusTime(LocalDateTime.now());
                         siteRepository.save(site);
                         indexingResponse.setResult(true);
-                        indexingResponse.setError("Indexing site " + site.getUrl() + " completed successfully");
                     }
 
                 }
@@ -100,7 +99,7 @@ public class IndexingServiceImpl implements IndexingService {
         log.info("Индексация прервана пользователем");
         IndexingResponse indexingResponse = new IndexingResponse();
         indexingResponse.setResult(false);
-        indexingResponse.setError("Indexing stopped by user");
+        indexingResponse.setError("Индексация прервана пользователем");
         return indexingResponse;
     }
 

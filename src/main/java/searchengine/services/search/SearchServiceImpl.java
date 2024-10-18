@@ -61,28 +61,42 @@ public class SearchServiceImpl implements SearchService {
         }
 
         Optional<Double> optionalMaxRank = pageRank.values().stream().max(Double::compareTo);
-        List<SearchData> searchData;
+        List<SearchData> searchDataList;
         if (optionalMaxRank.isEmpty()) {
-            searchData = List.of();
+            searchDataList = List.of();
         } else {
+            searchDataList = new ArrayList<>();
             double maxRank = optionalMaxRank.get();
-            searchData = pageRank.entrySet().parallelStream()
-                    .map(entry -> {
-                        Page page = entry.getKey();
-                        Double rank = entry.getValue();
-                        String content = page.getContent();
-                        return new SearchData(page.getSite().getUrl(),
-                                page.getSite().getName(),
-                                page.getPath(),
-                                HtmlParser.getTitle(content),
-                                snippetGenerator.generateSnippet(query, content),
-                                (float) (rank / maxRank));
-                    })
-                    .sorted((a, b) -> Float.compare(b.getRelevance(), a.getRelevance()))
-                    .toList();
+            for (Map.Entry<Page, Double> entry : pageRank.entrySet()) {
+                Page page = entry.getKey();
+                double rank = entry.getValue();
+                String content = page.getContent();
+                SearchData searchData = new SearchData();
+                searchData.setRelevance((float) (rank / maxRank));
+                searchData.setUri(page.getPath());
+                searchData.setSite(page.getSite().getUrl());
+                searchData.setSiteName(page.getSite().getName());
+                searchData.setSnippet(snippetGenerator.generateSnippet(query, content));
+                searchData.setTitle(HtmlParser.getTitle(content));
+                searchDataList.add(searchData);
+            }
+//            searchData = pageRank.entrySet().stream()
+//                    .map(entry -> {
+//                        Page page = entry.getKey();
+//                        Double rank = entry.getValue();
+//                        String content = page.getContent();
+//                        return new SearchData(page.getSite().getUrl(),
+//                                page.getSite().getName(),
+//                                page.getPath(),
+//                                HtmlParser.getTitle(content),
+//                                snippetGenerator.generateSnippet(query, content),
+//                                (float) (rank / maxRank));
+//                    })
+//                    .sorted((a, b) -> Float.compare(b.getRelevance(), a.getRelevance()))
+//                    .toList();
         }
         log.info("Search time: {} ms.", System.currentTimeMillis() - startTime);
-        return new SearchResponse(true, searchData.size(), subList(searchData, offset, limit));
+        return new SearchResponse(true, searchDataList.size(), subList(searchDataList, offset, limit));
     }
 
     private List<SearchData> subList(List<SearchData> searchData, Integer offset, Integer limit) {

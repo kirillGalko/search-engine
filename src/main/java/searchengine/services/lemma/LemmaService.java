@@ -3,6 +3,7 @@ package searchengine.services.lemma;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
+import org.jsoup.safety.Cleaner;
 import org.jsoup.safety.Safelist;
 import org.springframework.stereotype.Service;
 import searchengine.model.Index;
@@ -15,6 +16,7 @@ import searchengine.repositoreis.SiteRepository;
 import searchengine.services.indexing.HtmlParser;
 
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 @Service
 @RequiredArgsConstructor
@@ -31,9 +33,9 @@ public class LemmaService {
         Map<String, Integer> lemmas = lemmaParser.collectLemmas(text);
         Map<String, Integer> englishLemmas = englishLemmaParser.collectLemmas(text);
         lemmas.putAll(englishLemmas);
-        Set<Lemma> lemmaSetToSave = new HashSet<>();
-        Set<Index> indices = new HashSet<>();
-        synchronized (lemmaRepository) {
+        CopyOnWriteArraySet<Lemma> lemmaSetToSave = new CopyOnWriteArraySet<>();
+        CopyOnWriteArraySet<Index> indices = new CopyOnWriteArraySet<>();
+//        synchronized (lemmaRepository) {
             lemmas.forEach((name, count) -> {
                 List<Lemma> optionalLemma = lemmaRepository.findBySiteAndLemma(page.getSite(), name);
                 Lemma lemma;
@@ -59,11 +61,12 @@ public class LemmaService {
 
             });
             lemmaRepository.saveAll(lemmaSetToSave);
-        }
+//        }
         indexRepository.saveAll(indices);
     }
 
-    public String htmlToText(String content) {
-        return Jsoup.clean(content, Safelist.none());
+    public static String htmlToText(String content) {
+        Cleaner cleaner = new Cleaner(Safelist.none());
+        return cleaner.clean(Jsoup.parse(content)).text();
     }
 }
