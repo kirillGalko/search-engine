@@ -33,5 +33,8 @@ public class Page {
     @Column(name = "content", columnDefinition = "MEDIUMTEXT", nullable = false)
     private String content;
 
+//    @Version
+//    private Long version;
+
 
 }

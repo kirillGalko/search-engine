@@ -17,6 +17,7 @@ import searchengine.repositoreis.PageRepository;
 import searchengine.repositoreis.SiteRepository;
 import searchengine.services.lemma.LemmaService;
 
+import javax.persistence.OptimisticLockException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -50,18 +51,19 @@ public class HtmlParser extends RecursiveAction {
 
                 sleep(500);
                 Document doc = getConnection(url);
-                synchronized (pageRepository) {
+                synchronized (Page.class) {
                     if (isNotVisited(site, url)) {
-                        String path = url.equals(site.getUrl()) ? "/" : url.substring(site.getUrl().length());
-                        Page page = new Page();
-                        page.setSite(site);
-                        page.setPath(path);
-                        page.setCode(doc.connection().response().statusCode());
-                        page.setContent(doc.html());
-                        pageRepository.save(page);
-                        if (page.getCode() < 400) {
-                            lemmaService.findAndSave(page);
-                        }
+                    String path = url.equals(site.getUrl()) ? "/" : url.substring(site.getUrl().length());
+                    Page page = new Page();
+                    page.setSite(site);
+                    page.setPath(path);
+                    page.setCode(doc.connection().response().statusCode());
+                    page.setContent(doc.html());
+                    pageRepository.save(page);
+                    if (page.getCode() < 400) {
+                        lemmaService.findAndSave(page);
+                    }
+
                     }
                 }
                 Elements links = doc.select("a[href]");
